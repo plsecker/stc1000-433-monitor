@@ -1,0 +1,10 @@
+#define TICKS_SEC 5000
+// 200uS sampling
+#define INTERRUPT_INTERVAL 200L
+
+#define COOLING_CODE 16
+#define HEATING_CODE 64
+#define RELAY_OFF    0
+
+#define FINEOFFSET_PERIOD 48
+#define FINEOFFSET_REARM 3
