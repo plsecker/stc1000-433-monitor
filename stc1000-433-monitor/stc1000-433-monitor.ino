@@ -8,6 +8,10 @@
 
 // Currently, there appears to be some interference with Wifi and 433MHz reception.  Consequently the program turns off Wifi (into sleep mode) whilst scanning for 433MHz Fine Offset packets. Upon reception of a valid packet the wifi is reenabled before the next packet is due.
 
+// Setup Wi-Fi:
+//  * Enter SECRET_SSID in "secrets.h"
+//  * Enter SECRET_PASS in "secrets.h"
+
 // Philip Secker  Apr  2019
 
 // Including the ESP8266 WiFi library
@@ -15,11 +19,12 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "BetterWH2.h"
+#include "secrets.h"
 
 
 // Replace with your network details
-//const char* ssid = "SSID";
-//const char* password = "password";
+char ssid[] = SECRET_SSID;   // your network SSID (name)
+char pass[] = SECRET_PASS;   // your network password
 
 // wh2 defines
 struct Fineoffset {
@@ -73,7 +78,7 @@ void setup() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
