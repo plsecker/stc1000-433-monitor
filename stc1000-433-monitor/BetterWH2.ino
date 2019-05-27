@@ -12,7 +12,7 @@ extern "C" {
 volatile unsigned long counter = 0;
 
 // NodeMCU pin D4
-#define RF_IN 2
+#define RF_IN 4
 // NodeMCU pin D1 for monitoring
 #define RF_OUT 5
 

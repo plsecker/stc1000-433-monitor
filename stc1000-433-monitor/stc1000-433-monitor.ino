@@ -1,10 +1,12 @@
 // Main routine for the following hardware:
 
 //    ESP8266 NodeMCU (ESP12-E) board
-//    DS18B20 Local Temp sensor
+//    Maxim Integrated DS18B20 Local Temperature sensor
 //    433MHz receiver coupled to a STC-1000 Temperature Controller flashed with 433MHz firmware https://github.com/matsstaff/stc1000p
 //
-// Program to listen to the 433MHz transmission from the STC-1000, collecting the first packet it receives with a good CRC. The transmitted packet conforms to the "Fine Offset" weather station protocol.  The STC-1000 firmware transmits its current temperature and the state of its relays (heating, cooling).  This information, along with the local board's temperature is served up as a simple webpage
+// Program to listen to the 433MHz transmission from the STC-1000, collecting the first packet it receives with a good CRC. 
+// The transmitted packet conforms to the "Fine Offset" weather station protocol.  The STC-1000 firmware transmits its current temperature and the state of its relays (heating, cooling).
+// This information, along with the 'local' ESP8266 board's temperature is served up as a simple webpage
 
 // Currently, there appears to be some interference with Wifi and 433MHz reception.  Consequently the program turns off Wifi (into sleep mode) whilst scanning for 433MHz Fine Offset packets. Upon reception of a valid packet the wifi is reenabled before the next packet is due.
 
@@ -12,7 +14,7 @@
 //  * Enter SECRET_SSID in "secrets.h"
 //  * Enter SECRET_PASS in "secrets.h"
 
-// Philip Secker  Apr  2019
+// Philip Secker  May  2019
 
 // Including the ESP8266 WiFi library
 #include <ESP8266WiFi.h>
@@ -21,6 +23,14 @@
 #include "BetterWH2.h"
 #include "secrets.h"
 
+// Optionally send to Mathwork's Thingspeak to remotely log temperatures, see eg. https://github.com/nothans/thingspeak-esp-examples.git
+#define THINGSPEAK    
+#undef  THINGSPEAK    // comment out to use THINGSPEAK remote logging
+#ifdef  THINGSPEAK
+#include "ThingSpeak.h"
+unsigned long myChannelNumber = SECRET_CH_ID;
+const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
+#endif
 
 // Replace with your network details
 char ssid[] = SECRET_SSID;   // your network SSID (name)
@@ -40,7 +50,7 @@ extern volatile unsigned long counter;
 
 // Local temperature is sampled with DS18B20
 // Data wire is plugged into pin D2 of NodeMCU
-#define ONE_WIRE_BUS 4
+#define ONE_WIRE_BUS 2
 
 // Setup a oneWire instance
 OneWire oneWire(ONE_WIRE_BUS);
@@ -71,7 +81,8 @@ void setup() {
   setup_wh2();
 
   //Init local temp sensor
-  DS18B20.begin(); // IC Default 9 bit. If you have troubles consider upping it 12. Ups the delay giving the IC more time to process the temperature measurement
+  DS18B20.begin();
+  DS18B20.setResolution(10);  //10bit
 
   // Connecting to WiFi network
   Serial.println();
@@ -99,6 +110,8 @@ void setup() {
 
   WiFi.forceSleepBegin();                  // turn off ESP8266 RF
   delay(10);                                // give RF section time to shutdown
+
+
 }
 
 boolean getLocalTemperature() {
@@ -132,8 +145,8 @@ void loop() {
   }
 
   // core 433MHz packet processor
-  if (wh2_process(&stc1000)) {
-    counter = 0;                        // reset counter - ~45s before must disable wifi
+  if (wh2_process(&stc1000)) {          // wait till get a valid packet
+    counter = 0;                        // reset counter - max 48s before next
 
     WiFi.forceSleepWake();              // waken wifi
 
@@ -158,7 +171,8 @@ void loop() {
       strcpy(humidityRString, "Relay's off");
     Serial.println(humidityRString);
 
-    // Listen for new clients for ~45s then return to Fine Offset scan
+    // Listen for new clients then return to Fine Offset scan
+    digitalWrite(LED_BUILTIN, LOW);     // turn the LED on whilst serving
     while (counter < (FINEOFFSET_PERIOD - FINEOFFSET_REARM) * TICKS_SEC) {
       WiFiClient client = server.available();
       if (client) {
@@ -178,47 +192,50 @@ void loop() {
               // your actual web page that displays temperature
               client.println("<!DOCTYPE HTML>");
               client.println("<html>");
-              client.println("<head> <meta charset='UTF-8'> <title>STC1000 Temperature Monitor</title> <meta name='viewport' content='width=device-width, initial-scale=1'> <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css' /> <style> .temp { font-size: 60px; } </style> <style> .max { font-size: 20px; } </style> </head><body><h1>STC-1000 Temperature Monitor</h1>");
-              client.println("<h1 class='temp'>");
-              client.println("Local:");
-              if (getLocalTemperature()) {
-                Serial.println("Got Local Temp");
-                client.print(temperatureLString);
-                client.println("°</h1>");
-              }
+              client.println("<head> <meta charset='UTF-8'> <title>STC-1000 Temperature Monitor</title> <meta name='viewport' content='width=device-width, initial-scale=1'> <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css' /> </head><body>");
+              client.println("<style> .stc { font-size: 60px; } </style> <style> .max { font-size: 20px; } </style> <style> .local { font-size: 30px; } </style>");
+              client.println("<h1>STC-1000 Temperature Monitor</h1>");
 
-              client.println("<h1 class='max'>");
-              client.println("<p>Min: ");
-
-              dtostrf(minLocalTemperature, 3, 2, minTempString);
-              dtostrf(maxLocalTemperature, 3, 2, maxTempString);
-
-              client.print(minTempString);
-              client.println("°    Max: ");
-              client.print(maxTempString);
-              client.println("°</p></h1>");
-
-              client.println("<h1 class='temp'>");
+              //STC
+              client.println("<h1 class='stc'>");
               client.println("STC:");
               client.print(temperatureRString);
-              client.println("°</h1>");
+              client.println("Â°</h1>");
 
               client.println("<h1 class='max'>");
               client.println("<p>Relay: ");
               client.println(humidityRString);
               client.println("</p></h1>");
 
-              client.println("<h1 class='max'>");
-              client.println("<p>Min: ");
-
               dtostrf(minRemoteTemperature, 3, 2, minTempString);
               dtostrf(maxRemoteTemperature, 3, 2, maxTempString);
 
+              client.println("<h1 class='max'>");
+              client.println("<p>Min: ");
               client.print(minTempString);
-              client.println("°    Max: ");
+              client.println("Â°    Max: ");
               client.print(maxTempString);
-              client.println("°</p></h1>");
+              client.println("Â°</p></h1>");
 
+
+              // LOCAL
+              client.println("<h1 class='local'>");
+              client.println("Local Temperature:");
+              if (getLocalTemperature()) {
+                Serial.println("Got Local Temp");
+                client.print(temperatureLString);
+                client.println("Â°</h1>");
+              }
+
+              dtostrf(minLocalTemperature, 3, 2, minTempString);
+              dtostrf(maxLocalTemperature, 3, 2, maxTempString);
+
+              client.println("<h1 class='max'>");
+              client.println("<p>Min: ");
+              client.print(minTempString);
+              client.println("Â°    Max: ");
+              client.print(maxTempString);
+              client.println("Â°</p></h1>");
 
               client.println("</body></html>");
               break;
@@ -239,6 +256,24 @@ void loop() {
         Serial.println("Client disconnected.");
       }
     }
+    digitalWrite(LED_BUILTIN, HIGH);    // turn the LED off
+
+#ifdef THINGSPEAK
+    WiFiClient  client_send;
+    ThingSpeak.begin(client_send);
+    // Write value to Field 1 of a ThingSpeak Channel
+    ThingSpeak.setField(1, (float)atof(temperatureRString));
+    ThingSpeak.setField(2, (float)atof(temperatureLString));
+    int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+
+    if (httpCode == 200) {
+      Serial.println("Channel write successful.");
+    }
+    else {
+      Serial.println("Problem writing to channel. HTTP error code " + String(httpCode));
+    }
+#endif
+
     WiFi.forceSleepBegin();                  // turn off ESP8266 RF before 433MHz scanning
   }
 

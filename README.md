@@ -4,6 +4,8 @@
 
 Arduino sketch for the ESP8266 Wifi chip which listens to the 433MHz transmission from the STC-1000, collecting the first packet it receives with a good CRC. The transmitted packet conforms to the "Fine Offset" weather station protocol.  The STC-1000 firmware transmits its current temperature and the state of its relays (heating, cooling).  This information, along with a 'local' DS18B20 temperature reading, is served up as a simple webpage.
 
+## SOFTWARE
+Install ESP8266 support for Arduino https://github.com/esp8266/Arduino
 
 ## HARDWARE
 
