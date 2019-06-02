@@ -2,6 +2,7 @@
 //WeatherSensorWH2 adapted for the ESP8266
 //Note a timeout peculiarity of the STC-1000 temperature controller is included but this won't preclude working with other fine-offset stations
 
+#include "pins_arduino.h"
 #include "ESP8266WiFi.h"
 extern "C" {
 #include "user_interface.h"
@@ -11,10 +12,10 @@ extern "C" {
 // tick counter (200uS)
 volatile unsigned long counter = 0;
 
-// NodeMCU pin D4
-#define RF_IN 2
+// NodeMCU pin D2
+#define RF_IN D2
 // NodeMCU pin D1 for monitoring
-#define RF_OUT 5
+#define RF_OUT D1
 
 // 1 is indicated by 500uS pulse
 // wh2_accept from 2 = 400us to 3 = 600us

@@ -7,4 +7,4 @@
 #define RELAY_OFF    0
 
 #define FINEOFFSET_PERIOD 48
-#define FINEOFFSET_REARM 3
+#define FINEOFFSET_REARM 8
