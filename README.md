@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Arduino sketch for the ESP8266 Wifi chip which listens to the 433MHz transmission from the STC-1000 Temperature Controller, collecting the first packet it receives with a good CRC. The transmitted packet conforms to the "Fine Offset" weather station protocol.  The STC-1000 firmware transmits its current temperature and the state of its relays (heating, cooling).  This information, along with a 'local' DS18B20 temperature reading, is served up as a simple webpage.
+Arduino sketch for the ESP8266 Wifi chip which listens to the 433MHz transmission from the STC-1000 Temperature Controller flashed with new firmware (https://github.com/matsstaff/stc1000p), collecting the first packet it receives with a good CRC. The transmitted packet conforms to the "Fine Offset" weather station protocol.  The STC-1000p firmware transmits its current temperature and the state of its relays (heating, cooling).  This information, along with a 'local' DS18B20 temperature reading, is served up as a simple webpage from the ESP.
 
 Useful for a scenario whereby one wishes to monitor a temperature control system, eg. beer fermentation, which resides in an area with no WiFi.  The temperature controller will transmit (depending on the device used) 10-100m to an ESP8266-based Arduino board which is connected to WiFi.  The system has a compile option to serve up readings to a Thingspeak IoT server.
 
