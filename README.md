@@ -9,6 +9,7 @@ Useful for a scenario whereby one wishes to monitor a temperature control system
 ## SOFTWARE
 Install ESP8266 support for Arduino https://github.com/esp8266/Arduino
 Add libraries for DallasTemperature, OneWire
+Thingspeak: https://github.com/mathworks/thingspeak-arduino.git
 
 ## HARDWARE (tested)
 
