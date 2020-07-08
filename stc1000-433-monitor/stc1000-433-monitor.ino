@@ -169,6 +169,7 @@ void loop() {
       delay(1000);
       Serial.print(".");
     }
+    Serial.println(WiFi.localIP());
     Serial.println("");
 #endif
 
